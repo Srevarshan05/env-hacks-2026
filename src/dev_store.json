@@ -1,0 +1,443 @@
+{
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "full_name": "Demo Eco Champion",
+      "email": "demo@env.app",
+      "password_hash": "$2a$10$qh6gAmaG16gIeuB6kiOfjuw/cw/kFZB/.tCZUidcUO0bLzZy3EGR6",
+      "role": "admin",
+      "created_at": "2026-10-10T05:45:32.763Z"
+    },
+    {
+      "id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "full_name": "Alex Green",
+      "email": "tester_1791611318271@env.app",
+      "password_hash": "$2a$10$N7R03.KfxSe7EfuYy6cVMeFRjpB2ZSae/EKkSE4Uo6YMdPHPhdPzS",
+      "role": "user",
+      "created_at": "2026-10-10T05:48:38.433Z"
+    },
+    {
+      "id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "full_name": "Alex Green",
+      "email": "tester_1791611336855@env.app",
+      "password_hash": "$2a$10$SSTvOwcYJBfeNuhgYUh/3eXlv39Zj/3EWpP7ef/2KzW.xpW27hhoK",
+      "role": "user",
+      "created_at": "2026-10-10T05:48:56.986Z"
+    },
+    {
+      "id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "full_name": "Alex Green",
+      "email": "tester_1791611375437@env.app",
+      "password_hash": "$2a$10$ILPCLJ0YxI8i07pC5jJIa./9fNf8EE1Mq9WsRz4LgrYzbjd39tnz2",
+      "role": "user",
+      "created_at": "2026-10-10T05:49:35.552Z"
+    },
+    {
+      "id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "full_name": "Alex Green",
+      "email": "tester_1791611399204@env.app",
+      "password_hash": "$2a$10$48CY9k0ChXnWW9DMnreh7O7cb1Di.3lh2284HZIP3JsjR3Jf8aXnq",
+      "role": "user",
+      "created_at": "2026-10-10T05:49:59.319Z"
+    },
+    {
+      "id": "bf42e60a-34a7-4322-ad73-99d7434b64e0",
+      "full_name": "Poor Points User",
+      "email": "zero_1791611414746@test.com",
+      "password_hash": "$2a$10$cANp.pPG59fDfpYOGyFWreFkiR0DyU3.rDLQKYkvwEVTkvs6zOCRy",
+      "role": "user",
+      "created_at": "2026-10-10T05:50:14.831Z"
+    },
+    {
+      "id": "0da825d3-7902-4dc3-8c62-7ab6c46d34fe",
+      "full_name": "archanna",
+      "email": "archana33683@gmail.com",
+      "password_hash": "$2a$10$ESUI5Zw7QE6fq7xwYYKe6exyHzR/1.zYYBzPLcTjjnE66O174js7W",
+      "role": "user",
+      "created_at": "2026-10-10T05:54:59.760Z"
+    },
+    {
+      "id": "4241d9fc-0002-4f93-bf5a-b61cc4f10460",
+      "full_name": "Sam Taylor",
+      "email": "scanner_user_1791622478427@env.app",
+      "password_hash": "$2a$10$2GGZSeiOHJkHQ2mtdzOhPep6iutBs47D7bdVxjXRd52tsdTHbf1r6",
+      "role": "user",
+      "created_at": "2026-10-10T08:54:38.547Z"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ECO-DEMO-001",
+      "name": "Campus Water Purifier",
+      "location": "Main Campus · Block A",
+      "latitude": null,
+      "longitude": null,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    },
+    {
+      "id": "NODE-001",
+      "name": "Library Water Station",
+      "location": "Library Building · Ground Floor",
+      "latitude": null,
+      "longitude": null,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "title": "Reusable Bamboo Bottle",
+      "description": "Eco-friendly reusable bottle voucher.",
+      "points_cost": 100,
+      "cost": 100,
+      "stock": 16,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "title": "Plant a Tree",
+      "description": "Redeem a virtual tree planting certificate.",
+      "points_cost": 150,
+      "cost": 150,
+      "stock": 30,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000003",
+      "title": "Green Store Gift Voucher",
+      "description": "Sample ₹100 eco-store voucher.",
+      "points_cost": 250,
+      "cost": 250,
+      "stock": 10,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000004",
+      "title": "Organic Cotton Tote",
+      "description": "Plastic-free reusable shopping bag.",
+      "points_cost": 200,
+      "cost": 200,
+      "stock": 15,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000005",
+      "title": "Eco Starter Kit",
+      "description": "Digital voucher for sustainable essentials.",
+      "points_cost": 500,
+      "cost": 500,
+      "stock": 5,
+      "active": true,
+      "created_at": "2026-10-10T05:45:32.777Z"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "633b54a8-d10c-481e-9566-d26edc610a93",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "node_id": "ECO-DEMO-001",
+      "liters": 2.5,
+      "status": "approved",
+      "points_awarded": 50,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:48:38.466Z",
+      "reviewed_at": "2026-10-10T05:48:38.468Z"
+    },
+    {
+      "id": "9e2cffa9-5771-4bea-b230-983a7211fa56",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "node_id": "ECO-DEMO-001",
+      "liters": 5,
+      "status": "approved",
+      "points_awarded": 100,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:48:38.476Z",
+      "reviewed_at": "2026-10-10T05:48:38.477Z"
+    },
+    {
+      "id": "b6b0860c-0e4c-457a-bf42-8dae47a74ae8",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "node_id": "ECO-DEMO-001",
+      "liters": 2.5,
+      "status": "approved",
+      "points_awarded": 50,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:48:57.019Z",
+      "reviewed_at": "2026-10-10T05:48:57.021Z"
+    },
+    {
+      "id": "5012ea5b-4aca-4429-93f7-327ec4a4ed8e",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "node_id": "ECO-DEMO-001",
+      "liters": 5,
+      "status": "approved",
+      "points_awarded": 100,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:48:57.028Z",
+      "reviewed_at": "2026-10-10T05:48:57.030Z"
+    },
+    {
+      "id": "923a8209-154e-419d-8f2d-5906ae09bd84",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "node_id": "ECO-DEMO-001",
+      "liters": 2.5,
+      "status": "approved",
+      "points_awarded": 50,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:49:35.584Z",
+      "reviewed_at": "2026-10-10T05:49:35.586Z"
+    },
+    {
+      "id": "8d5475d2-c8fe-4da4-9ba4-d4d787cb0986",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "node_id": "ECO-DEMO-001",
+      "liters": 5,
+      "status": "approved",
+      "points_awarded": 100,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:49:35.594Z",
+      "reviewed_at": "2026-10-10T05:49:35.596Z"
+    },
+    {
+      "id": "3c77415c-0274-4581-969d-087ef799f6c2",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "node_id": "ECO-DEMO-001",
+      "liters": 2.5,
+      "status": "approved",
+      "points_awarded": 50,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:49:59.343Z",
+      "reviewed_at": "2026-10-10T05:49:59.344Z"
+    },
+    {
+      "id": "7bbd91ed-57ed-4a2e-942d-83a20e96a73f",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "node_id": "ECO-DEMO-001",
+      "liters": 5,
+      "status": "approved",
+      "points_awarded": 100,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T05:49:59.351Z",
+      "reviewed_at": "2026-10-10T05:49:59.353Z"
+    },
+    {
+      "id": "e26773ad-74b5-48c3-8e51-97ed0ccf881c",
+      "user_id": "4241d9fc-0002-4f93-bf5a-b61cc4f10460",
+      "node_id": "ECO-DEMO-001",
+      "liters": 0.5,
+      "status": "approved",
+      "points_awarded": 10,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T08:54:38.567Z",
+      "reviewed_at": "2026-10-10T08:54:38.569Z"
+    },
+    {
+      "id": "afabd686-d350-40ed-b817-acce31706af0",
+      "user_id": "0da825d3-7902-4dc3-8c62-7ab6c46d34fe",
+      "node_id": "ECO-DEMO-001",
+      "liters": 0.5,
+      "status": "approved",
+      "points_awarded": 10,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T08:58:11.830Z",
+      "reviewed_at": "2026-10-10T08:58:11.834Z"
+    },
+    {
+      "id": "d16ceec9-49c9-4976-a358-7ac9c0b1c658",
+      "user_id": "0da825d3-7902-4dc3-8c62-7ab6c46d34fe",
+      "node_id": "ECO-DEMO-001",
+      "liters": 1,
+      "status": "approved",
+      "points_awarded": 20,
+      "reviewer_id": null,
+      "created_at": "2026-10-10T08:58:18.411Z",
+      "reviewed_at": "2026-10-10T08:58:18.413Z"
+    }
+  ],
+  "points_ledger": [
+    {
+      "id": "120adcf0-153b-46e4-b3b3-c65b99dd2b34",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "delta": 50,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "633b54a8-d10c-481e-9566-d26edc610a93",
+      "redemption_id": "633b54a8-d10c-481e-9566-d26edc610a93",
+      "created_at": "2026-10-10T05:48:38.469Z"
+    },
+    {
+      "id": "12402d3f-b59a-46a3-8345-a2d1cd23be93",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "delta": 100,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "9e2cffa9-5771-4bea-b230-983a7211fa56",
+      "redemption_id": "9e2cffa9-5771-4bea-b230-983a7211fa56",
+      "created_at": "2026-10-10T05:48:38.479Z"
+    },
+    {
+      "id": "af7b26fb-d5ba-4b67-9266-30899f2f8aba",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "delta": -100,
+      "reason": "Redeemed Reusable Bamboo Bottle",
+      "contribution_id": "5d87d8e4-dc67-49a2-8770-b58283e2001b",
+      "redemption_id": "5d87d8e4-dc67-49a2-8770-b58283e2001b",
+      "created_at": "2026-10-10T05:48:38.493Z"
+    },
+    {
+      "id": "df1dd372-23c0-4dfc-8fb7-8e487a8ee87f",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "delta": 50,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "b6b0860c-0e4c-457a-bf42-8dae47a74ae8",
+      "redemption_id": "b6b0860c-0e4c-457a-bf42-8dae47a74ae8",
+      "created_at": "2026-10-10T05:48:57.022Z"
+    },
+    {
+      "id": "15324f48-e064-4c35-b591-802b9d250671",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "delta": 100,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "5012ea5b-4aca-4429-93f7-327ec4a4ed8e",
+      "redemption_id": "5012ea5b-4aca-4429-93f7-327ec4a4ed8e",
+      "created_at": "2026-10-10T05:48:57.031Z"
+    },
+    {
+      "id": "c8a86e20-3ac4-4e7a-89e2-282566c02166",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "delta": -100,
+      "reason": "Redeemed Reusable Bamboo Bottle",
+      "contribution_id": "f4e42347-31c4-48b1-8867-e74ff6592f26",
+      "redemption_id": "f4e42347-31c4-48b1-8867-e74ff6592f26",
+      "created_at": "2026-10-10T05:48:57.046Z"
+    },
+    {
+      "id": "f4d59105-7163-4b63-b579-a6211f783620",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "delta": 50,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "923a8209-154e-419d-8f2d-5906ae09bd84",
+      "redemption_id": "923a8209-154e-419d-8f2d-5906ae09bd84",
+      "created_at": "2026-10-10T05:49:35.588Z"
+    },
+    {
+      "id": "f6a9e0ad-d8bd-4711-9f4e-8e743dfc9c62",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "delta": 100,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "8d5475d2-c8fe-4da4-9ba4-d4d787cb0986",
+      "redemption_id": "8d5475d2-c8fe-4da4-9ba4-d4d787cb0986",
+      "created_at": "2026-10-10T05:49:35.598Z"
+    },
+    {
+      "id": "b6256ddc-e7e5-46cd-b6d0-7d6a4a94bf4f",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "delta": -100,
+      "reason": "Redeemed Reusable Bamboo Bottle",
+      "contribution_id": "f34735d9-8fcc-442f-991c-86ec2fdc5692",
+      "redemption_id": "f34735d9-8fcc-442f-991c-86ec2fdc5692",
+      "created_at": "2026-10-10T05:49:35.611Z"
+    },
+    {
+      "id": "954aa032-44c6-4c14-adf2-ba263f3043c3",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "delta": 50,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "3c77415c-0274-4581-969d-087ef799f6c2",
+      "redemption_id": "3c77415c-0274-4581-969d-087ef799f6c2",
+      "created_at": "2026-10-10T05:49:59.346Z"
+    },
+    {
+      "id": "efa72bd2-cb08-4be1-a8e8-ed57ba28d76a",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "delta": 100,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "7bbd91ed-57ed-4a2e-942d-83a20e96a73f",
+      "redemption_id": "7bbd91ed-57ed-4a2e-942d-83a20e96a73f",
+      "created_at": "2026-10-10T05:49:59.355Z"
+    },
+    {
+      "id": "b7e74083-1141-4ada-8008-d5e9d8e2b9f3",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "delta": -100,
+      "reason": "Redeemed Reusable Bamboo Bottle",
+      "contribution_id": "ef6641e4-6568-4c8d-9a7e-4913a9c2e987",
+      "redemption_id": "ef6641e4-6568-4c8d-9a7e-4913a9c2e987",
+      "created_at": "2026-10-10T05:49:59.369Z"
+    },
+    {
+      "id": "3fe3e941-958a-472a-b3f8-e5a28f1ba3c6",
+      "user_id": "4241d9fc-0002-4f93-bf5a-b61cc4f10460",
+      "delta": 10,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "e26773ad-74b5-48c3-8e51-97ed0ccf881c",
+      "redemption_id": "e26773ad-74b5-48c3-8e51-97ed0ccf881c",
+      "created_at": "2026-10-10T08:54:38.571Z"
+    },
+    {
+      "id": "5cb77e09-0cca-4736-af7f-3e834b8f1a8f",
+      "user_id": "0da825d3-7902-4dc3-8c62-7ab6c46d34fe",
+      "delta": 10,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "afabd686-d350-40ed-b817-acce31706af0",
+      "redemption_id": "afabd686-d350-40ed-b817-acce31706af0",
+      "created_at": "2026-10-10T08:58:11.837Z"
+    },
+    {
+      "id": "86ce8b44-973f-4a80-a075-62b51b05251f",
+      "user_id": "0da825d3-7902-4dc3-8c62-7ab6c46d34fe",
+      "delta": 20,
+      "reason": "Refill at Campus Water Purifier",
+      "contribution_id": "d16ceec9-49c9-4976-a358-7ac9c0b1c658",
+      "redemption_id": "d16ceec9-49c9-4976-a358-7ac9c0b1c658",
+      "created_at": "2026-10-10T08:58:18.414Z"
+    }
+  ],
+  "redemptions": [
+    {
+      "id": "5d87d8e4-dc67-49a2-8770-b58283e2001b",
+      "user_id": "80b32e10-6777-4512-8d79-5204ac3b25ae",
+      "reward_id": "10000000-0000-0000-0000-000000000001",
+      "points_spent": 100,
+      "status": "requested",
+      "created_at": "2026-10-10T05:48:38.492Z"
+    },
+    {
+      "id": "f4e42347-31c4-48b1-8867-e74ff6592f26",
+      "user_id": "aae49ee9-3526-483b-baa9-0ae270dc65d1",
+      "reward_id": "10000000-0000-0000-0000-000000000001",
+      "points_spent": 100,
+      "status": "requested",
+      "created_at": "2026-10-10T05:48:57.045Z"
+    },
+    {
+      "id": "f34735d9-8fcc-442f-991c-86ec2fdc5692",
+      "user_id": "ea310904-1e4a-4c9d-a77f-fb8e9af6c3b5",
+      "reward_id": "10000000-0000-0000-0000-000000000001",
+      "points_spent": 100,
+      "status": "requested",
+      "created_at": "2026-10-10T05:49:35.610Z"
+    },
+    {
+      "id": "ef6641e4-6568-4c8d-9a7e-4913a9c2e987",
+      "user_id": "61bd76ce-e85b-4353-9c2d-b45f5fba934d",
+      "reward_id": "10000000-0000-0000-0000-000000000001",
+      "points_spent": 100,
+      "status": "requested",
+      "created_at": "2026-10-10T05:49:59.368Z"
+    }
+  ],
+  "sensor_readings": [
+    {
+      "id": 1,
+      "node_id": "ECO-DEMO-001",
+      "co2_ppm": 420,
+      "water_level_pct": 88,
+      "recorded_at": "2026-10-10T05:45:32.777Z"
+    }
+  ]
+}
