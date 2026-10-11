@@ -1,7 +1,8 @@
 # Frontend ↔ backend API contract
 
 Every example below is a **real response** captured from the backend (test data, so ids and times differ).
-Base URL: `VITE_API_URL` (local network: `http://192.168.1.5:8080`; after deployment: the App Runner HTTPS URL).
+Base URL: `VITE_API_URL=<backend URL>`: the deployed Lambda Function URL (`https://<id>.lambda-url.<region>.on.aws`, HTTPS, no trailing slash), or `http://localhost:8080` locally.
+The first request after a few idle minutes takes about 3 s (cold start); later ones take about 0.2 s.
 
 ## Rules the frontend must follow
 

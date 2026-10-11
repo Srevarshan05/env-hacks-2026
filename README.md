@@ -1,184 +1,299 @@
-# Algae refill machine backend (Python / FastAPI)
+# Algae Refill Backend: FastAPI · Cognito · RDS · Lambda
 
-Backend for the algae-based refill machines: accounts, QR machine context, sensor-verified refill sessions, points and rewards. The former Node.js/Express backend was removed; it remains in git history (commit `fbcdde3`).
-It uses the **existing** RDS PostgreSQL tables, plus two new tables from a reviewed, additive migration.
+Backend for **public, algae-based air-purifier units that anyone can refill with water**. Each unit carries a QR
+sticker. A user scans it, signs in, taps **Hydrate algae**, and earns points for the water that was actually
+measured. Points can be spent on rewards.
 
-## Layout
+> **Flow sensor status:** the physical flow sensor is not integrated yet. Refills are measured by a deterministic,
+> **server-side simulator**, and every simulated result is labelled (`verification_mode: "simulator"`,
+> `is_simulated: true`, `[SIMULATED]` in the points ledger). The hardware path (device API) is built and tested,
+> and is enabled with `REFILL_VERIFICATION_MODE=hardware`.
 
+Part of the **env-hacks-2026** project by team **.env**. Branches: `web-app-backend` (this backend),
+`webapp-fronted` (React frontend), `iot-air-node` (ESP32 air-quality node).
+
+---
+
+## Contents
+- [Architecture](#architecture)
+- [How a refill works](#how-a-refill-works)
+- [Project structure](#project-structure)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [Tests](#tests)
+- [Database and migrations](#database-and-migrations)
+- [Authentication (Amazon Cognito)](#authentication-amazon-cognito)
+- [API](#api)
+- [Device API (hardware mode)](#device-api-hardware-mode)
+- [Deployment (AWS Lambda)](#deployment-aws-lambda)
+- [Security notes and roadmap](#security-notes-and-roadmap)
+
+## Architecture
+
+```text
+ QR sticker ──► https://<frontend>/m/NODE-001          (AWS Amplify Hosting, React)
+                     │
+   sign-up / login ──┼──► Amazon Cognito user pool     (Amplify Auth in the browser)
+                     │
+     HTTPS + Cognito ID token
+                     ▼
+        AWS Lambda Function URL                         (this repo: one FastAPI container image)
+                     │  private, inside the VPC
+                     ▼
+        Amazon RDS for PostgreSQL                       (users, machines, refills, points, rewards)
 ```
-app/
-  main.py            FastAPI app, /api/health, error handling, starts the worker thread
-  config.py          all settings from env vars (.env locally, Secrets Manager on AWS)
-  db.py              engine with TLS verify-full against the RDS CA bundle
-  models.py          ORM models mapped onto the existing tables + migration_002 tables
-  security.py        Cognito ID-token verification (JWKS), device key
-  services/
-    refills.py       refill session state machine, verification, exactly-once credit
-    simulator.py     deterministic flow-sensor simulator (demo mode only)
-    points.py        points rule + ledger balance
-    rewards.py       locked, idempotent redemption
-    users.py         Cognito identity -> RDS users row (created on first login)
-  routers/           auth, machines, refills, account, rewards, admin, device
-  worker.py          DB-backed worker (in-process thread, or `python -m app.worker`)
-scripts/
-  inspect_schema.py  READ-ONLY dump of the live schema + comparison with the ORM
-  apply_migration.py applies one SQL file only after --confirm-database <name>
-sql/
-  schema.sql, migration_001.sql          original schema (already on RDS; used by tests)
-  migration_002_refill_sessions.sql       refill sessions (applied to ecoair 2026-10-11)
-tests/               44 tests against a throwaway local PostgreSQL (Cognito tokens signed with a test key)
-```
 
-## Database
-
-The application database on RDS is **`ecoair`** (verified from `pg_database`). Inspect the live schema with `python -m scripts.inspect_schema`.
-
-The RDS schema was originally built by the former Node.js tooling, which applied `schema.sql`, **relaxed `nodes_id_check`** to `^(NODE-[0-9]{3,}|ECO-[A-Z0-9-]+)$`, applied `migration_001.sql` (`rewards.description` plus seed data), and seeded an admin user.
-
-### migration_003: Cognito link (applied to ecoair on 2026-10-11)
-
-Adds one nullable column, `users.cognito_sub`, and a partial unique index on it. Nothing else changes. Rows created for Cognito users store the marker `!cognito-managed` in `password_hash` (still `NOT NULL`), which can never match a password. Existing users are linked to their Cognito identity the first time they sign in with the same **verified** email, so their history is kept.
-
-```powershell
-python -m scripts.apply_migration sql/migration_003_cognito_users.sql --confirm-database ecoair
-```
-
-### migration_002 (applied to ecoair on 2026-10-11)
-
-| Change | Why |
+| Concern | Choice |
 |---|---|
-| new `refill_sessions` | Holds the richer states (`created → active → measuring → verifying → approved / failed / cancelled / expired`). `contributions` can't, because its status only allows pending/approved/rejected and it requires `liters > 0`. |
-| new `flow_readings` | An auditable record of every sensor reading (or simulated reading) behind a credit. |
-| partial unique indexes | Allow one open session per machine and one per user, so a single physical measurement can never be split between users. |
-| `redemptions.idempotency_key` (nullable) + partial unique index | Makes a retried redemption request safe to repeat. |
+| API | FastAPI + SQLAlchemy 2 + psycopg 3, Python 3.12 |
+| Auth | Amazon Cognito: the frontend signs in, the backend verifies ID tokens (RS256 / JWKS) |
+| Database | Amazon RDS for PostgreSQL, TLS with `sslmode=verify-full` |
+| Hosting | AWS Lambda (container image from Amazon ECR) via the AWS Lambda Web Adapter + Function URL |
+| Frontend | AWS Amplify Hosting (separate branch), auto-deploys from GitHub |
 
-No existing table, column, constraint, or row is changed. A `contributions` row is written only when a session is approved (`status='approved'`, `reviewer_id NULL`), and `refill_sessions.contribution_id` links back to it. Historical rows keep their meaning.
+## How a refill works
 
-The credit-exactly-once guarantee rests on database constraints: `refill_sessions.contribution_id UNIQUE` plus the existing `points_ledger.contribution_id UNIQUE`.
+1. **Scan.** The QR encodes only the machine id (`/m/NODE-001`). The frontend loads `GET /api/machines/NODE-001`.
+2. **Sign in** with Cognito. The frontend calls `POST /api/auth/session {"machine_id": "NODE-001"}`; the user's
+   database row is created on first login.
+3. **Hydrate algae:** `POST /api/refill-sessions {"machine_id": "NODE-001"}`. The body accepts **only** the machine
+   id. Sending `liters` or `points` is rejected with `422`.
+4. The flow sensor (today: the simulator) reports cumulative litres; the UI polls `GET /api/refill-sessions/{id}`.
+5. The backend verifies the readings, approves the contribution and credits points **exactly once**.
 
-```powershell
-python -m scripts.inspect_schema                      # read-only; run this first
-python -m scripts.apply_migration sql/migration_002_refill_sessions.sql --confirm-database ecoair
+**State machine:**
+
+```text
+created → active → measuring → verifying → approved
+     └──────┴──────────┴─► expired / cancelled / failed
 ```
 
-If the API uses a separate least-privilege role, uncomment the `GRANT` lines at the end of the migration.
+Every transition runs under a row lock (`SELECT … FOR UPDATE`). A terminal session can never earn points.
 
-## Local setup
+**Points rule:** `verified = truncate(measured, 0.01 L)` and `points = floor(verified × POINTS_PER_LITER)`, with
+`POINTS_PER_LITER = 1` (1.25 L → 1 point), all in `Decimal`. Refills below `MIN_VERIFIED_LITERS` (1.00 L) fail
+with `volume_below_minimum`.
+
+**Verification** checks that readings exist, come from the session's own mode, only increase, match the session
+total, stay within `MAX_SESSION_LITERS`, and imply a plausible average flow rate (`MAX_FLOW_RATE_LPS`).
+
+**Exactly-once credit and safe redemption**
+- The balance is always `SUM(delta)` over `points_ledger`; the ledger is the only source of truth.
+- `refill_sessions.contribution_id UNIQUE` + `points_ledger.contribution_id UNIQUE` make a double credit impossible.
+- Contribution, ledger credit and the `approved` status are written in **one transaction**.
+- Partial unique indexes allow one open session per machine and per user.
+- `Idempotency-Key` headers make retried *Hydrate* and *Redeem* taps safe.
+- Redemption locks the user's row before checking the balance, so concurrent taps can't overspend.
+
+**Simulator vs hardware.** The mode is fixed on each session when it is created, and a session is only verified
+while the server runs in that same mode (otherwise it fails with `verification_mode_mismatch`). Hardware mode never
+falls back to simulated approval. The default simulator profile is 0.25 L/s for 5 s after a 2 s delay
+(1.25 L → 1 point), identical on every run.
+
+**No dependence on a background process.** Session progress is a pure function of stored state and elapsed time.
+A DB-backed worker (`FOR UPDATE SKIP LOCKED`) advances sessions on long-running hosts. On serverless hosting, status
+polls advance the session they read, and starting a refill or checking a machine first completes any session someone
+abandoned. Polling never adds water.
+
+| Timeout (hardware mode; simulator sessions follow their fixed schedule) | Result |
+|---|---|
+| `created` not activated by the machine within 60 s | `expired` (`machine_not_activated`) |
+| `active` with no flow within 120 s | `expired` (`no_flow_detected`) |
+| hardware session still running after 600 s | `failed` (`max_duration_exceeded`) |
+
+## Project structure
+
+```text
+app/
+  main.py              FastAPI app, /api/health, error handling, optional in-process worker
+  config.py            all settings from environment variables (.env locally)
+  db.py                engine (TLS verify-full), schema checks for /api/health
+  models.py            ORM models for the existing tables + migration tables
+  security.py          Cognito ID-token verification (JWKS), device key check
+  deps.py              auth dependencies, role checks
+  schemas.py           request models and response shaping
+  worker.py            DB-backed worker (`python -m app.worker`)
+  services/
+    refills.py         refill state machine, verification, exactly-once credit
+    simulator.py       deterministic flow simulator
+    points.py          points rule and ledger balance
+    rewards.py         locked, idempotent redemption
+    users.py           Cognito identity → users row (first login, verified-email linking)
+  routers/             auth, machines, refills, account, rewards, admin, device
+scripts/
+  inspect_schema.py    READ-ONLY dump of the live schema + comparison with the ORM
+  apply_migration.py   applies one SQL file, only with --confirm-database <name>
+sql/                   schema.sql, migration_001 … migration_004
+tests/                 47 tests against a throwaway local PostgreSQL
+docs/FRONTEND_API.md   request/response examples for the frontend
+Dockerfile             one image for Docker and AWS Lambda
+```
+
+## Run locally
+
+Requirements: Python 3.12+, access to the PostgreSQL database, the
+[RDS CA bundle](https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem) saved as `global-bundle.pem`,
+and a Cognito user pool.
 
 ```powershell
-python -m venv .venv; .venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements-dev.txt
-Copy-Item .env.example .env      # then fill in values; .env is git-ignored
+Copy-Item .env.example .env        # fill in your values; .env is git-ignored
 uvicorn app.main:app --reload --port 8080
 ```
 
-### Tests (never touch RDS; a guard refuses non-local URLs)
+Open `http://localhost:8080/api/health` and `http://localhost:8080/docs` (interactive docs, disabled in production).
+
+## Configuration
+
+All settings are environment variables (see [.env.example](.env.example)). The most important ones:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` or `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | PostgreSQL connection |
+| `DB_SSLMODE`, `DB_CA_PATH` | TLS; production requires `verify-full` |
+| `COGNITO_REGION`, `COGNITO_USER_POOL_ID`, `COGNITO_APP_CLIENT_IDS` | which user pool / app client tokens must come from |
+| `COGNITO_JWKS_JSON` | optional: the pool's public keys, for hosts without internet access |
+| `REFILL_VERIFICATION_MODE` | `simulator` or `hardware` |
+| `POINTS_PER_LITER`, `MIN_VERIFIED_LITERS` | points rule (defaults 1 and 1.00) |
+| `CORS_ORIGINS` | comma-separated frontend origins allowed to call the API |
+| `PUBLIC_APP_URL` | frontend base URL encoded into QR stickers (`{PUBLIC_APP_URL}/m/{machine_id}`) |
+| `DEVICE_API_KEY` | shared key for the device API (required in production) |
+| `RUN_WORKER_IN_PROCESS`, `DB_POOL_SIZE` | worker thread on/off, connections per instance |
+
+**Never commit `.env`, `*.pem`, passwords or tokens.** Both are git-ignored.
+
+## Tests
+
+The tests never touch RDS. A guard refuses any non-local database URL.
 
 ```powershell
 docker run -d --name refill-test-pg -e POSTGRES_PASSWORD=localtest -p 127.0.0.1:55432:5432 postgres:16-alpine
 pytest
 ```
 
+The suite rebuilds the production schema from `sql/` and covers the full refill flow, concurrency (simultaneous
+starts, credits and redemptions), the hardware device protocol, timeouts, mode switching and Cognito token
+validation, using real RS256 tokens signed with a test key.
+
+## Database and migrations
+
+The backend runs on an **existing** PostgreSQL database. Migrations are additive, reviewed, and **never run
+automatically**.
+
+| File | Change |
+|---|---|
+| `schema.sql`, `migration_001.sql` | original schema and seed data |
+| `migration_002_refill_sessions.sql` | `refill_sessions`, `flow_readings`, `redemptions.idempotency_key` |
+| `migration_003_cognito_users.sql` | `users.cognito_sub` + unique index |
+| `migration_004_reprice_rewards.sql` | reward costs for the 1 point per litre rule |
+
+```powershell
+python -m scripts.inspect_schema                         # read-only; compare the live schema with the code
+python -m scripts.apply_migration sql/<file>.sql --confirm-database <database name>
+```
+
+`apply_migration` refuses to run unless `--confirm-database` matches the database it actually connected to.
+
 ## Authentication (Amazon Cognito)
 
-Cognito owns sign-up, email verification, login and passwords; this backend never sees a password.
+Cognito owns sign-up, email verification, login and passwords. This backend never sees a password.
 
-1. **Frontend** (Create account / Log in screens) uses AWS Amplify Auth against the user pool:
-   `signUp({ username: email, password, options: { userAttributes: { email, name } } })`,
-   `confirmSignUp` (emailed code), then `signIn`.
-2. The frontend reads the **ID token** (`fetchAuthSession()).tokens.idToken.toString()`) and sends it on every
-   API call as `Authorization: Bearer <id_token>`. Amplify refreshes it automatically.
-3. Right after sign-in it calls `POST /api/auth/session {"machine_id": "NODE-001"}`. The backend verifies the
-   token (RS256 signature against the pool's JWKS, issuer, app client id, expiry, `token_use = id`), creates the
-   user's row in RDS on first login (`is_new_user: true`), and echoes the scanned machine.
-4. Logout is `signOut()` in the frontend; there is no backend logout.
+1. The frontend uses Amplify Auth: `signUp` (attributes `email`, `name`), `confirmSignUp`, `signIn`.
+2. It sends the **ID token** on every call: `Authorization: Bearer <idToken>`. Access tokens are rejected.
+3. The backend checks the RS256 signature against the pool's JWKS, plus issuer, app client id, expiry and
+   `token_use = id`.
+4. On first login the user's database row is created, keyed by the Cognito `sub`. Pre-existing users are linked by
+   email **only if Cognito marks the email verified**.
 
-Roles (`user` / `operator` / `admin`) live in the RDS `users.role` column. Promote with
-`UPDATE users SET role = 'admin' WHERE email = '...'`.
+Roles (`user`, `operator`, `admin`) live in `users.role`. Promote with `UPDATE users SET role = 'admin' WHERE email = '…'`.
 
-**User pool settings:** sign-in with email; required attributes `email` and `name`; email verification on;
-an app client **without** a client secret (browser apps can't keep one).
+**User pool settings:** sign in with email; required attributes `email` and `name`; email verification on; an app
+client **without** a client secret.
 
-## Refill flow
+## API
 
-1. The QR sticker encodes `{PUBLIC_APP_URL}/m/NODE-001`. The frontend calls `GET /api/machines/NODE-001`.
-2. If the user isn't signed in, the frontend shows the Cognito Create account / Log in screens, keeping `machine_id` in the URL. After sign-in it calls `POST /api/auth/session` with that `machine_id`. The response echoes a `machine` object (`status: ok | inactive | not_found`) so the UI can continue to the refill page.
-3. **Hydrate algae** (Start Refill): `POST /api/refill-sessions {"machine_id":"NODE-001"}`, with an optional `Idempotency-Key` header. The body **rejects** any `liters`/`points` fields.
-4. The frontend polls `GET /api/refill-sessions/{id}` about once a second until `status` is terminal.
-
-Progress is a pure function of stored state and elapsed time. Polling never adds water; the tests check this.
-
-| Mode | How readings arrive | Who ends measuring |
-|---|---|---|
-| `simulator` | The worker writes deterministic readings (default 0.25 L/s for 5 s after a 2 s delay, giving 1.25 L and 1 point). | The schedule ends. |
-| `hardware` | The device posts cumulative litres (see below). | The device sends `final: true`, or there are no readings for `FLOW_IDLE_TIMEOUT_S`. |
-
-Verification checks that readings exist, come from the session's own mode, increase monotonically, and match the session total. It also checks `MIN_VERIFIED_LITERS ≤ volume ≤ MAX_SESSION_LITERS` and an average flow rate at or below `MAX_FLOW_RATE_LPS`.
-
-The rule is `verified = truncate(measured, 0.01 L)` and `points = floor(verified × POINTS_PER_LITER)`, both in Decimal arithmetic. The contribution, ledger credit, and status change are committed in one transaction.
-
-**Simulator and hardware are never mixed.** A session records its mode when it's created. It is only verified while the server runs in that same mode; otherwise it fails with `verification_mode_mismatch` and earns nothing. Device endpoints reject simulator sessions. Simulated credits are labelled `[SIMULATED]` in the ledger, and the API reports `is_simulated` and `verification_mode`.
-
-**Timeouts:**
-
-| From | To | When |
-|---|---|---|
-| `created` | `expired` | not activated within 60 s |
-| `active` | `expired` | no flow within 120 s |
-| hardware session | `failed` | still running after 600 s |
-
-Users can cancel only before water flows. Staff can also cancel while a session is measuring.
-
-**Recovery:** the `refill_sessions` table *is* the job queue. The worker claims rows with `FOR UPDATE SKIP LOCKED`, so any number of instances can run it, and a restarted instance continues where the last one stopped. The status endpoint also performs the same idempotent catch-up, which keeps sessions moving even when App Runner throttles CPU on an idle instance.
-
-### Device protocol (hardware mode, header `X-Device-Key`)
-
-```
-GET  /api/device/machines/{id}/pending-session
-POST /api/device/machines/{id}/sessions/{sid}/activate
-POST /api/device/machines/{id}/sessions/{sid}/readings   {"seq":3,"cumulative_liters":0.75,"final":false}
-POST /api/device/telemetry                               {"node_id":"NODE-001","co2_ppm":480,...}
-```
-
-Readings are idempotent per `seq` (a retry is safe). A conflicting value for the same `seq` returns 409. A total lower than the previous one returns 422.
-
-**Physical presence:** a static QR doesn't prove someone is at the machine. In hardware mode a session stays `created` until **the machine itself** activates it, and that activation step is where a future proof-of-presence handshake belongs (e.g. a code on the machine's display that the user confirms). Today one `DEVICE_API_KEY` is shared by all devices. Move to per-device keys or AWS IoT credentials before running unattended in public.
-
-## API summary
-
-Frontend developers: see [docs/FRONTEND_API.md](docs/FRONTEND_API.md) for real request/response examples, the screen-to-endpoint map and error codes.
+Full request/response examples, the screen-to-endpoint map and error codes:
+**[docs/FRONTEND_API.md](docs/FRONTEND_API.md)**.
 
 | Method | Path | Auth |
 |---|---|---|
-| GET | `/api/health` | none (503 if the DB is down or tables are missing) |
-| POST | `/api/auth/session` (create or load the RDS user, echo machine) | Cognito ID token |
-| GET | `/api/me`, `/api/auth/me` | user |
+| GET | `/api/health` | none (503 if the DB or schema isn't ready) |
+| POST | `/api/auth/session` | Cognito ID token |
+| GET | `/api/me` | user |
 | GET | `/api/machines`, `/api/machines/{id}`, `/api/machines/{id}/readings/latest` | none |
-| POST | `/api/refill-sessions` | user |
-| GET | `/api/refill-sessions`, `/active`, `/{id}[?include_readings=true]` | owner |
+| POST | `/api/refill-sessions` (`Idempotency-Key`) | user |
+| GET | `/api/refill-sessions`, `/api/refill-sessions/active`, `/api/refill-sessions/{id}` | owner |
 | POST | `/api/refill-sessions/{id}/cancel` | owner |
-| GET | `/api/me/points`, `/api/dashboard`, `/api/history`, `/api/profile` | user |
+| GET | `/api/profile`, `/api/dashboard`, `/api/me/points`, `/api/history` | user |
 | GET | `/api/rewards` | user |
-| POST | `/api/rewards/{id}/redeem` (with `Idempotency-Key`) | user |
+| POST | `/api/rewards/{id}/redeem` (`Idempotency-Key`) | user |
 | GET | `/api/admin/summary`, `/api/admin/refill-sessions` | admin, operator |
 | POST | `/api/admin/refill-sessions/{id}/cancel` | admin, operator |
-| POST/PATCH | `/api/admin/machines[/{id}]`, POST `/api/admin/rewards` | admin |
-| GET | `/api/admin/machines/{id}/qr` (SVG for printing) | admin |
+| POST / PATCH | `/api/admin/machines[/{id}]`, POST `/api/admin/rewards` | admin |
+| GET | `/api/admin/machines/{id}/qr` (SVG sticker) | admin |
 
-Interactive docs are served at `/docs` (disabled when `APP_ENV=production`).
+Errors look like `{"error": "<code>", "message": "<text>"}`; request-validation errors (`422`) use FastAPI's `{"detail": [...]}` format.
 
-**Removed on purpose:**
-- `POST /api/refills` (old Node API), which accepted client-entered litres.
-- The manual operator approval flow.
-- The unstored random "voucher code".
-- The `plasticAvoided` figure.
+## Device API (hardware mode)
 
-## Deploying to App Runner
+For the ESP32 / Raspberry Pi flow-sensor controller. Requires the `X-Device-Key` header.
 
-1. `docker build -t refill-backend .` and push the image to ECR. The image downloads the public RDS CA bundle and runs as a non-root user on port 8080.
-2. Create an App Runner service from that image on port 8080, with health check `/api/health`.
-3. Add a VPC connector in the VPC of `hackathon-rdb`. Allow its security group inbound on 5432 in `sg-0841ff7f1f742e5c2` (from the connector's SG only, never `0.0.0.0/0`).
-4. Set `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DEVICE_API_KEY` from Secrets Manager. Set `COGNITO_USER_POOL_ID`, `COGNITO_APP_CLIENT_IDS`, `REFILL_VERIFICATION_MODE`, `CORS_ORIGINS`, and `PUBLIC_APP_URL` as plain env vars (they aren't secrets).
-   Verifying tokens needs the user pool's public keys (JWKS). With a VPC connector, App Runner sends **all** outbound traffic through your VPC, so downloading them needs a NAT gateway. To avoid that cost, paste the contents of `https://cognito-idp.ap-south-1.amazonaws.com/<pool id>/.well-known/jwks.json` into `COGNITO_JWKS_JSON`. The keys are public and not secret.
-5. Production mode refuses to start without `DB_SSLMODE=verify-full` and a `DEVICE_API_KEY`; every mode requires the Cognito pool id and app client id.
+```text
+GET  /api/device/machines/{id}/pending-session
+POST /api/device/machines/{id}/sessions/{sid}/activate
+POST /api/device/machines/{id}/sessions/{sid}/readings   {"seq": 3, "cumulative_liters": 0.75, "final": false}
+POST /api/device/telemetry                               {"node_id": "NODE-001", "co2_ppm": 480, ...}
+```
 
+Readings are idempotent per `seq`. A conflicting value for the same `seq` returns `409`; a decreasing total returns
+`422`. The session ends on `final: true` or after `FLOW_IDLE_TIMEOUT_S` without readings.
+
+## Deployment (AWS Lambda)
+
+The same Docker image runs on AWS Lambda through the
+[AWS Lambda Web Adapter](https://github.com/awslabs/aws-lambda-web-adapter) (one `COPY` line in the `Dockerfile`;
+inactive outside Lambda), exposed over HTTPS by a **Lambda Function URL**.
+
+| Piece | Setup |
+|---|---|
+| Image | Amazon ECR repository `refill-backend`, built for `linux/amd64` |
+| Function | `refill-backend`: container image, 1536 MB, 30 s timeout |
+| Network | the database's VPC subnets and a security group that can reach RDS; no NAT gateway needed |
+| HTTPS | Function URL, auth type `NONE` (the app enforces Cognito); resource policy grants `lambda:InvokeFunctionUrl` **and** `lambda:InvokeFunction` with condition `lambda:InvokedViaFunctionUrl` |
+| Role | execution role with `AWSLambdaVPCAccessExecutionRole` |
+| Config | environment variables as in [Configuration](#configuration), with `APP_ENV=production`, `RUN_WORKER_IN_PROCESS=false`, `DB_POOL_SIZE=2`, and `COGNITO_JWKS_JSON` (the VPC function has no internet access) |
+| Logs | CloudWatch Logs `/aws/lambda/refill-backend` |
+
+**Redeploy after a code change** (PowerShell, repo root; set your account id):
+
+```powershell
+$account = "<AWS_ACCOUNT_ID>"; $region = "ap-south-1"
+$repo = "$account.dkr.ecr.$region.amazonaws.com/refill-backend"; $tag = git rev-parse --short HEAD
+aws ecr get-login-password --region $region | docker login --username AWS --password-stdin "$account.dkr.ecr.$region.amazonaws.com"
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false -t "${repo}:$tag" --load .
+docker push "${repo}:$tag"
+aws lambda update-function-code --function-name refill-backend --image-uri "${repo}:$tag"
+```
+
+`--provenance=false` keeps the image manifest in a format Lambda accepts. When the frontend gets a new domain, add
+it to `CORS_ORIGINS` (comma-separated) in the function's environment variables.
+
+Observed performance: about 3 s on a cold start after idle, about 0.2 s warm.
+
+## Security notes and roadmap
+
+- Secrets come only from environment variables; `.env` and certificate files are git-ignored.
+- Database connections verify the server certificate (`verify-full`).
+- Clients never send litres or points; all numbers come from verified readings and the ledger.
+
+Planned before unattended public use:
+- integrate the real flow sensor and switch to `hardware` mode
+- a proof-of-presence handshake (e.g. a code on the machine's display), since a static QR is not proof
+- per-device credentials instead of one shared `DEVICE_API_KEY`
+- a least-privilege database user, private-only database access, and secrets in AWS Secrets Manager
+
+---
+
+The previous Node.js/Express implementation is preserved in git history (commit `fbcdde3`).
