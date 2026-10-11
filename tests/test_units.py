@@ -8,7 +8,7 @@ from app.services.refills import InvalidTransition, _transition
 from tests.conftest import T0
 
 
-@pytest.mark.parametrize("liters,points", [("0.50", 5), ("1.00", 10), ("1.25", 12), ("2.00", 20), ("0.10", 1), ("0.09", 0)])
+@pytest.mark.parametrize("liters,points", [("1.00", 1), ("1.25", 1), ("1.99", 1), ("2.00", 2), ("10.50", 10), ("0.99", 0)])
 def test_points_rule(liters, points):
     assert points_for(Decimal(liters)) == points
 

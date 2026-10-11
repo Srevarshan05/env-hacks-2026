@@ -43,7 +43,7 @@ def test_full_simulated_refill_credits_exactly_once(client, clock, make_user):
     clock.advance(2)
     s = status(client, user, sid)
     assert s["status"] == "approved"
-    assert s["verified_liters"] == 1.25 and s["points_awarded"] == 12
+    assert s["verified_liters"] == 1.25 and s["points_awarded"] == 1
     assert s["verification_mode"] == "simulator"
 
     # More polls / worker passes after approval change nothing.
@@ -52,9 +52,9 @@ def test_full_simulated_refill_credits_exactly_once(client, clock, make_user):
         worker.run_once(clock.advance(5))
 
     pts = client.get("/api/me/points", headers=user["headers"]).json()
-    assert pts["balance"] == 12 and len(pts["ledger"]) == 1
+    assert pts["balance"] == 1 and len(pts["ledger"]) == 1
     assert pts["ledger"][0]["reason"].endswith("[SIMULATED]")
-    assert sql("SELECT liters, status, points_awarded FROM contributions") == [(pytest.approx(1.25), "approved", 12)]
+    assert sql("SELECT liters, status, points_awarded FROM contributions") == [(pytest.approx(1.25), "approved", 1)]
     assert sql("SELECT count(*) FROM flow_readings WHERE session_id = %s", uuid.UUID(sid)) == [(6,)]
 
     readings = client.get(f"/api/refill-sessions/{sid}?include_readings=true", headers=user["headers"]).json()["readings"]
@@ -79,7 +79,7 @@ def test_worker_recovers_session_after_downtime(client, clock, make_user):
     sid = start(client, user).json()["session_id"]
     assert worker.run_once(clock.advance(600)) == 1
     s = status(client, user, sid)
-    assert (s["status"], s["verified_liters"], s["points_awarded"]) == ("approved", 1.25, 12)
+    assert (s["status"], s["verified_liters"], s["points_awarded"]) == ("approved", 1.25, 1)
 
 
 def test_partial_progress_then_resume(client, clock, make_user):
@@ -88,7 +88,7 @@ def test_partial_progress_then_resume(client, clock, make_user):
     worker.run_once(clock.advance(4))   # measuring, 0.50 L
     assert status(client, user, sid)["measured_liters"] == 0.5
     worker.run_once(clock.advance(100))
-    assert status(client, user, sid)["points_awarded"] == 12
+    assert status(client, user, sid)["points_awarded"] == 1
 
 
 def test_client_cannot_supply_liters(client, clock, make_user):
@@ -154,7 +154,7 @@ def test_concurrent_advances_credit_once(client, clock, make_user):
     threads = [threading.Thread(target=go) for _ in range(8)]
     [t.start() for t in threads]
     [t.join() for t in threads]
-    assert sql("SELECT count(*), sum(delta) FROM points_ledger") == [(1, 12)]
+    assert sql("SELECT count(*), sum(delta) FROM points_ledger") == [(1, 1)]
 
 
 def test_users_cannot_see_or_cancel_each_others_sessions(client, clock, make_user):

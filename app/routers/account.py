@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app import clock
 from app.db import get_db
 from app.deps import current_user
-from app.models import Contribution, Node, PointsLedger, Redemption, RefillSession, SensorReading, User
+from app.models import Contribution, Node, PointsLedger, Redemption, RefillSession, Reward, SensorReading, User
 from app.schemas import session_out
 from app.services.points import balance
 
@@ -31,8 +31,18 @@ def my_points(user: User = Depends(current_user), db: Session = Depends(get_db),
             func.coalesce(func.sum(case((PointsLedger.delta < 0, -PointsLedger.delta), else_=0)), 0),
         ).where(PointsLedger.user_id == user.id)
     ).one()
-    rows = db.scalars(
-        select(PointsLedger).where(PointsLedger.user_id == user.id).order_by(PointsLedger.created_at.desc()).limit(limit)
+    # One row per points movement, joined to what caused it, so the UI can render an
+    # activity feed (refills and redemptions) from this single call.
+    rows = db.execute(
+        select(PointsLedger, Contribution.liters, Contribution.node_id, Node.name, Redemption.reward_id,
+               Reward.title, RefillSession.verification_mode)
+        .outerjoin(Contribution, Contribution.id == PointsLedger.contribution_id)
+        .outerjoin(Node, Node.id == Contribution.node_id)
+        .outerjoin(RefillSession, RefillSession.contribution_id == Contribution.id)
+        .outerjoin(Redemption, Redemption.id == PointsLedger.redemption_id)
+        .outerjoin(Reward, Reward.id == Redemption.reward_id)
+        .where(PointsLedger.user_id == user.id)
+        .order_by(PointsLedger.created_at.desc()).limit(limit)
     ).all()
     return {
         "balance": int(earned) - int(spent),
@@ -42,7 +52,11 @@ def my_points(user: User = Depends(current_user), db: Session = Depends(get_db),
             "id": r.id, "delta": r.delta, "reason": r.reason, "created_at": r.created_at,
             "type": "contribution_credit" if r.contribution_id else "redemption_debit" if r.redemption_id else "adjustment",
             "contribution_id": r.contribution_id, "redemption_id": r.redemption_id,
-        } for r in rows],
+            "liters": float(liters) if liters is not None else None,
+            "machine_id": machine_id, "machine_name": machine_name,
+            "is_simulated": (mode == "simulator") if r.contribution_id else None,
+            "reward_id": reward_id, "reward_title": reward_title,
+        } for r, liters, machine_id, machine_name, reward_id, reward_title, mode in rows],
     }
 
 

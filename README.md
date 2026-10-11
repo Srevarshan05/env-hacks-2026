@@ -110,7 +110,7 @@ Progress is a pure function of stored state and elapsed time. Polling never adds
 
 | Mode | How readings arrive | Who ends measuring |
 |---|---|---|
-| `simulator` | The worker writes deterministic readings (default 0.25 L/s for 5 s after a 2 s delay, giving 1.25 L and 12 points). | The schedule ends. |
+| `simulator` | The worker writes deterministic readings (default 0.25 L/s for 5 s after a 2 s delay, giving 1.25 L and 1 point). | The schedule ends. |
 | `hardware` | The device posts cumulative litres (see below). | The device sends `final: true`, or there are no readings for `FLOW_IDLE_TIMEOUT_S`. |
 
 Verification checks that readings exist, come from the session's own mode, increase monotonically, and match the session total. It also checks `MIN_VERIFIED_LITERS ≤ volume ≤ MAX_SESSION_LITERS` and an average flow rate at or below `MAX_FLOW_RATE_LPS`.
@@ -145,6 +145,8 @@ Readings are idempotent per `seq` (a retry is safe). A conflicting value for the
 **Physical presence:** a static QR doesn't prove someone is at the machine. In hardware mode a session stays `created` until **the machine itself** activates it, and that activation step is where a future proof-of-presence handshake belongs (e.g. a code on the machine's display that the user confirms). Today one `DEVICE_API_KEY` is shared by all devices. Move to per-device keys or AWS IoT credentials before running unattended in public.
 
 ## API summary
+
+Frontend developers: see [docs/FRONTEND_API.md](docs/FRONTEND_API.md) for real request/response examples, the screen-to-endpoint map and error codes.
 
 | Method | Path | Auth |
 |---|---|---|

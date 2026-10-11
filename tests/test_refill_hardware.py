@@ -42,7 +42,7 @@ def test_hardware_flow_is_never_simulated(client, clock, make_user, mode):
     assert r.json()["status"] == "approved"
 
     s = client.get(f"/api/refill-sessions/{sid}", headers=user["headers"]).json()
-    assert (s["verified_liters"], s["points_awarded"], s["verification_mode"]) == (1.05, 10, "hardware")
+    assert (s["verified_liters"], s["points_awarded"], s["verification_mode"]) == (1.05, 1, "hardware")
     assert "[SIMULATED]" not in sql("SELECT reason FROM points_ledger")[0][0]
 
 
@@ -78,7 +78,7 @@ def test_idle_timeout_finishes_and_verifies(client, clock, make_user, mode):
     worker.run_once(clock.advance(5))
     assert sql("SELECT status FROM refill_sessions") == [("measuring",)]
     worker.run_once(clock.advance(5))
-    assert sql("SELECT status, verified_liters, points_awarded FROM refill_sessions")[0][0::2] == ("approved", 20)
+    assert sql("SELECT status, verified_liters, points_awarded FROM refill_sessions")[0][0::2] == ("approved", 2)
 
 
 def test_implausible_flow_rate_fails(client, clock, make_user, mode):
@@ -118,3 +118,16 @@ def test_device_endpoints_reject_simulator_sessions(client, clock, make_user):
     sid = start(client, make_user())
     assert client.post(f"{BASE}/sessions/{sid}/activate", headers=DEVICE_HEADERS).status_code == 409
     assert send(client, sid, 0, "5").status_code == 409
+
+
+def test_less_than_one_litre_earns_nothing(client, clock, make_user, mode):
+    """At 1 point per litre, refills below MIN_VERIFIED_LITERS (1.00 L) fail instead of crediting 0 points."""
+    mode(refill_verification_mode="hardware")
+    sid = start(client, make_user())
+    client.post(f"{BASE}/sessions/{sid}/activate", headers=DEVICE_HEADERS)
+    for seq, liters in enumerate(["0", "0.40", "0.95"]):
+        clock.advance(1)
+        send(client, sid, seq, liters, final=liters == "0.95")
+    assert sql("SELECT status, failure_reason FROM refill_sessions") == [("failed", "volume_below_minimum")]
+    assert sql("SELECT count(*) FROM points_ledger") == [(0,)]
+    assert sql("SELECT count(*) FROM contributions") == [(0,)]

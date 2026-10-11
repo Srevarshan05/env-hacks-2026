@@ -35,8 +35,8 @@ class Settings(BaseSettings):
 
     # --- Refill verification ------------------------------------------------
     refill_verification_mode: Literal["simulator", "hardware"] = "simulator"
-    points_per_liter: Decimal = Decimal("10")
-    min_verified_liters: Decimal = Decimal("0.10")
+    points_per_liter: Decimal = Decimal("1")  # 1 verified litre = 1 point
+    min_verified_liters: Decimal = Decimal("1.00")  # below this a refill would earn 0 points
     max_session_liters: Decimal = Decimal("20")  # contributions.liters is capped at 100 by the schema
     max_flow_rate_lps: Decimal = Decimal("1.0")  # plausibility bound for average flow
 

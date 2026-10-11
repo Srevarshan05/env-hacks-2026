@@ -16,7 +16,7 @@ def verified_liters_from(measured: Decimal) -> Decimal:
 
 
 def points_for(verified_liters: Decimal) -> int:
-    """Business rule: floor(verified litres x POINTS_PER_LITER). 1.25 L -> 12 points."""
+    """Business rule: floor(verified litres x POINTS_PER_LITER). At 1 point/L: 1.25 L -> 1 point."""
     raw = Decimal(verified_liters) * get_settings().points_per_liter
     return int(raw.to_integral_value(rounding=ROUND_FLOOR))
 

@@ -84,7 +84,7 @@ def database():
 def clean(database):
     with psycopg.connect(os.environ["DATABASE_URL"], autocommit=True) as c:
         c.execute("TRUNCATE flow_readings, refill_sessions, points_ledger, redemptions, contributions, users CASCADE")
-        c.execute("UPDATE rewards SET stock = 20 WHERE title = 'Reusable Bamboo Bottle'")
+        c.execute("UPDATE rewards SET stock = 20, points_cost = 100 WHERE title = 'Reusable Bamboo Bottle'")
         c.execute("INSERT INTO nodes(id, name, location) VALUES ('NODE-002', 'Hostel Station', 'Hostel') ON CONFLICT DO NOTHING")
         c.execute("UPDATE nodes SET active = true")
     yield
