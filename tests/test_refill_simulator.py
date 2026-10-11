@@ -189,3 +189,17 @@ def test_inactive_or_unknown_machine(client, clock, make_user):
     assert start(client, user, machine="NODE-002").json()["error"] == "machine_inactive"
     assert start(client, user, machine="NODE-999").status_code == 404
     assert start(client, user, machine="'; DROP TABLE users;--").status_code == 404
+
+
+def test_abandoned_session_does_not_block_machine_without_worker(client, clock, make_user):
+    """Serverless hosting has no always-on worker: a user who taps Hydrate and closes the page
+    must not leave the machine busy. The next visitor's request completes the old session."""
+    alice, bob = make_user(), make_user()
+    sid = start(client, alice).json()["session_id"]       # Alice never polls again
+    clock.advance(30)                                      # no worker pass happens
+    assert client.get("/api/machines/NODE-001").json()["available"] is True
+    r = start(client, bob)
+    assert r.status_code == 201
+    a = status(client, alice, sid)
+    assert (a["status"], a["points_awarded"]) == ("approved", 1)   # Alice still got her point, once
+    assert sql("SELECT count(*), sum(delta) FROM points_ledger") == [(1, 1)]

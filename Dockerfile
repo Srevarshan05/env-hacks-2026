@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 
+# AWS Lambda Web Adapter: lets this same HTTP image run on Lambda (Function URL). It is a
+# Lambda extension and does nothing when the image runs anywhere else (Docker, App Runner, ECS).
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 
 WORKDIR /srv

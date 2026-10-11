@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -81,12 +81,31 @@ def get_active_machine(db: Session, machine_id: str) -> Node:
     return node
 
 
+def catch_up_open_sessions(db: Session, now: datetime, *, node_id: str | None = None,
+                           user_id: uuid.UUID | None = None) -> None:
+    """Advance open sessions on this machine / of this user before judging them "busy".
+
+    On serverless hosting there is no always-on worker, so a session whose user closed the
+    page would otherwise keep the machine blocked until someone polled it. Advancing is
+    deterministic and idempotent, so this can never add water or credit twice.
+    """
+    conds = [c for c in (RefillSession.node_id == node_id if node_id else None,
+                         RefillSession.user_id == user_id if user_id else None) if c is not None]
+    if not conds:
+        return
+    ids = db.scalars(select(RefillSession.id).where(RefillSession.status.in_(OPEN_STATUSES), or_(*conds))).all()
+    for sid in ids:
+        advance_session(db, sid, now, skip_locked=True)
+    db.expire_all()
+
+
 def create_session(
     db: Session, user_id: uuid.UUID, machine_id: str, idempotency_key: str | None, now: datetime
 ) -> tuple[RefillSession, bool]:
     """Returns (session, created). Retries and double-taps return the existing open session."""
     settings = get_settings()
     node = get_active_machine(db, machine_id)
+    catch_up_open_sessions(db, now, node_id=node.id, user_id=user_id)
 
     def existing_or_conflict() -> RefillSession | None:
         if idempotency_key:

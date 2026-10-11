@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import clock
 from app.db import get_db
 from app.models import OPEN_STATUSES, Node, RefillSession, SensorReading
 from app.schemas import machine_out, parse_machine_id
+from app.services import refills
 from app.services.errors import ServiceError
 
 router = APIRouter(prefix="/api/machines", tags=["machines"])
@@ -22,6 +24,7 @@ def get_machine(machine_id: str, db: Session = Depends(get_db)):
     node = db.get(Node, parse_machine_id(machine_id))
     if node is None:
         raise ServiceError(404, "machine_not_found", "This machine is not registered.")
+    refills.catch_up_open_sessions(db, clock.utcnow(), node_id=node.id)
     busy = db.scalar(
         select(RefillSession.id).where(RefillSession.node_id == node.id, RefillSession.status.in_(OPEN_STATUSES))
     ) is not None
