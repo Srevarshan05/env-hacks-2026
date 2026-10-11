@@ -1,3 +1,6 @@
-node_modules/
 .env
 *.pem
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

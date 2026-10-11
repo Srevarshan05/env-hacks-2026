@@ -1,2 +1,0 @@
-const fs=require('fs');const path=require('path');const pool=require('./db');
-(async()=>{const sql=fs.readFileSync(path.join(__dirname,'../sql/schema.sql'),'utf8');const client=await pool.connect();try{await client.query('BEGIN');await client.query(sql);await client.query('COMMIT');console.log('.env user dashboard tables initialized');}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();await pool.end();}})().catch(e=>{console.error(e);process.exitCode=1;});

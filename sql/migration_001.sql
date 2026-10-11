@@ -1,5 +1,5 @@
 -- .env migration: safe, additive-only changes
--- Run with: node src/runMigration.js
+-- Already applied to RDS (ecoair) by the former Node.js tooling; kept for history and tests.
 
 -- Add description to rewards (nullable so existing rows are unaffected)
 ALTER TABLE rewards ADD COLUMN IF NOT EXISTS description TEXT;
