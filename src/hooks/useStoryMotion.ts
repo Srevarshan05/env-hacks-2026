@@ -14,6 +14,7 @@ export function useStoryMotion(track: ElementRef<HTMLElement>, camera: ElementRe
     let visualFrame = 0, animationFrame = 0
     let animating = false
     let lastWheel = -Infinity
+    let lastAdvance = -Infinity
     let touchX = 0, touchY = 0, touchEndX = 0, touchEndY = 0
     let touchActive = false
     let targetIndex = 0
@@ -95,7 +96,11 @@ export function useStoryMotion(track: ElementRef<HTMLElement>, camera: ElementRe
       event.preventDefault()
       const now = performance.now(), previous = lastWheel
       lastWheel = now
-      if (animating || now - previous < 170 || Math.abs(event.deltaY) < 4) return
+      if (animating || Math.abs(event.deltaY) < 4) return
+      // A new gesture advances at once; a long continuous one (trackpad, inertia) keeps advancing about once per 1.3 s
+      // instead of getting stuck on the first slide.
+      if (now - previous < 170 && now - lastAdvance < 1300) return
+      lastAdvance = now
       animateTo(currentIndex() + Math.sign(event.deltaY))
     }
     const touchStart = (event: TouchEvent) => {

@@ -31,8 +31,8 @@ function Algae({ x, height }: { x: number; height: number }) {
 
 const tankAlgae = [[938, 80], [1004, 58], [1112, 74], [1140, 50]] as const
 
-export default function BioreactorScene({ className = '' }: { className?: string }) {
-  return <svg className={`bioreactor-scene ${className}`} viewBox="0 0 1500 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+export default function BioreactorScene({ className = '', viewBox = '0 0 1500 1000' }: { className?: string; viewBox?: string }) {
+  return <svg className={`bioreactor-scene ${className}`} viewBox={viewBox} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <linearGradient id="air-treated" gradientUnits="userSpaceOnUse" x1="1004" y1="470" x2="1120" y2="690">
         <stop offset="0" stopColor="#94826f"/><stop offset=".55" stopColor="#6f9372"/><stop offset="1" stopColor="#4f8790"/>
