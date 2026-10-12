@@ -84,7 +84,7 @@ Font files and license copies are already stored in `public/fonts/`. `scripts/do
 
 ## Deployment (AWS Amplify, manual zip)
 
-Live at **https://webapp-fronted.d2g9yn1a89sqiw.amplifyapp.com** (Amplify app `d2g9yn1a89sqiw`, branch `webapp-fronted`, region `ap-south-1`). Every page route rewrites to `/index.html` (200) so deep links and QR URLs work.
+Live at **https://webapp-fronted.d2g9yn1a89sqiw.amplifyapp.com** (Amplify app `d2g9yn1a89sqiw`, Amplify hosting branch `webapp-fronted`, region `ap-south-1`; the code lives on the git branch `webapp-frontend`). Every page route rewrites to `/index.html` (200) so deep links and QR URLs work.
 
 ```sh
 npm run deploy   # build, zip dist/, upload to Amplify, wait for the result

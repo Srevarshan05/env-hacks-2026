@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ArrowUpRight, Menu, X } from 'lucide-react'
+import { ArrowUpRight, Github, Menu, X } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { links as projectLinks } from '../config/links'
 import { useAuth } from '../hooks/useAuth'
 import ProfileMenu from './ProfileMenu'
 
@@ -36,6 +37,6 @@ export default function Layout() {
       </div>
     </header>
     <main id="main"><Outlet /></main>
-    <footer className="site-footer"><div className="footer-inner"><Logo /><p>A little greener, together.</p><span>Built by team .env <span className="small-dot" /></span></div></footer>
+    <footer className="site-footer"><div className="footer-inner"><Logo /><p>A little greener, together.</p><span><a className="footer-repo" href={projectLinks.repo} target="_blank" rel="noopener noreferrer"><Github size={14} /> GitHub</a>Built by team .env <span className="small-dot" /></span></div></footer>
   </>
 }

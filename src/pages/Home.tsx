@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUpRight, ChevronsDown, Expand } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, ChevronsDown, Expand, GitBranch, Github } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BioreactorScene from '../components/BioreactorScene'
 import HowItFlows from '../components/HowItFlows'
 import LandingNav, { scrollToSection } from '../components/LandingNav'
 import WhyRefills from '../components/WhyRefills'
+import { links, repoBranches } from '../config/links'
 import { useStoryMotion } from '../hooks/useStoryMotion'
 
 const DEMO_VIDEO = { id: 'zw1ZXmUXFCU', start: 3 }
@@ -70,7 +71,7 @@ export default function Home() {
     <section className="demo-section page-shell" id="demo">
       <div className="section-intro"><span className="eyebrow">SEE IT WORKING</span><h2>The unit, <em>in action.</em></h2><p>A walkthrough of the thin-film algae air purifier, its sensors, and the cloud platform behind it.</p></div>
       <div className="video-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${DEMO_VIDEO.id}?start=${DEMO_VIDEO.start}&rel=0`} title=".env project demonstration video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/></div>
-      <a className="text-link video-link" href={`https://youtu.be/${DEMO_VIDEO.id}?t=${DEMO_VIDEO.start}`} target="_blank" rel="noopener noreferrer">Watch on YouTube <ArrowUpRight size={15}/></a>
+      <div className="video-links"><a className="text-link" href={`https://youtu.be/${DEMO_VIDEO.id}?t=${DEMO_VIDEO.start}`} target="_blank" rel="noopener noreferrer">Watch on YouTube <ArrowUpRight size={15}/></a><a className="text-link" href={links.repo} target="_blank" rel="noopener noreferrer"><Github size={15}/> View the code on GitHub</a></div>
     </section>
     <section className="product-section page-shell" id="product">
       <div className="product-copy"><span className="eyebrow">THE SYSTEM</span><h2>One unit.<br/>A living <em>system.</em></h2><p>A suction fan, a pump-fed thin film of algae, a filter column, and environmental sensing come together in one connected unit.</p>
@@ -88,6 +89,10 @@ export default function Home() {
         <figcaption><span className="architecture-hint">Swipe to explore the diagram.</span><a className="text-link" href="/assets/aws-architecture.png" target="_blank" rel="noopener"><Expand size={15}/> Open full size</a></figcaption>
       </figure>
       <ol className="architecture-steps">{awsFlow.map((item, index) => <li key={item.title}><span className={`step-dot step-${index + 1}`}>{index + 1}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></li>)}</ol>
+      <div className="repo-card">
+        <div className="repo-card-head"><span className="repo-icon"><Github size={24} strokeWidth={1.6}/></span><div><span className="eyebrow">OPEN SOURCE</span><h3>Explore the code</h3><p>Firmware, backend, and website live in one repository, one branch each.</p></div><a className="button button-primary" href={links.repo} target="_blank" rel="noopener noreferrer"><Github size={16}/> View on GitHub <ArrowUpRight size={15}/></a></div>
+        <ul className="repo-branches">{repoBranches.map(branch => <li key={branch.name}><a href={links.branch(branch.name)} target="_blank" rel="noopener noreferrer"><GitBranch size={15}/><code>{branch.name}</code></a><span>{branch.what}</span></li>)}</ul>
+      </div>
     </section>
   </>
 }

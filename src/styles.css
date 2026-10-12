@@ -521,3 +521,24 @@ html.snap-home .demo-section{scroll-snap-align:start}
  .flow-step:not(:last-child):after{display:block;top:auto;bottom:-15px;left:38px;right:auto;width:2px;height:16px;background:repeating-linear-gradient(180deg,var(--flow) 0 5px,transparent 5px 9px);background-size:2px 18px;animation:flow-dash-v 1.2s linear infinite}
  @keyframes flow-dash-v{to{background-position:0 18px}}
 }
+
+/* GitHub links */
+.video-links{display:flex;flex-wrap:wrap;gap:12px 28px;margin-top:16px}
+.video-links .text-link{gap:7px}
+.repo-card{margin-top:40px;border:1px solid #d4ddc6;border-radius:16px;background:#eef1e6;padding:24px}
+.repo-card-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.repo-card-head>div{flex:1;min-width:220px}
+.repo-card-head .eyebrow{color:#53634e}
+.repo-card-head h3{font-family:var(--heading);font-weight:400;letter-spacing:-.02em;font-size:24px;color:var(--ink);margin:4px 0}
+.repo-card-head p{font-size:14.5px;color:#53634e}
+.repo-card-head .button{gap:8px}
+.repo-icon{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:#fdfcf8;border:1px solid #d4ddc6;color:#2b4032}
+.repo-branches{list-style:none;margin:20px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.repo-branches li{background:#fdfcf8;border:1px solid #dfe3d6;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.repo-branches a{display:inline-flex;align-items:center;gap:7px;color:#31523b;font-weight:600}
+.repo-branches a:hover code{text-decoration:underline}
+.repo-branches code{font-size:13.5px;font-family:ui-monospace,Consolas,monospace}
+.repo-branches span{font-size:13.5px;line-height:1.55;color:#53634e}
+.footer-repo{display:inline-flex;align-items:center;gap:6px;color:#31523b;font-weight:600;margin-right:6px}
+.footer-repo:hover{text-decoration:underline}
+@media(max-width:760px){.repo-card{padding:18px}.repo-card-head h3{font-size:21px}.repo-card-head .button{width:100%;justify-content:center}.repo-branches{grid-template-columns:1fr}}
